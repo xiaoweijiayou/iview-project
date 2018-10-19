@@ -6,17 +6,21 @@
         bottom: 0;
         left: 0;
         text-align: center;
-        h1{
-            height: 150px;
-            img{
-                height: 100%;
+        background-image: url('/src/images/login-bg.jpg');
+        .login {
+            margin: auto;
+            position: relative; 
+            top: 50%;
+            width: 380px;
+            height: 200px;
+            background: #fff;
+            border-radius: 4px;
+            padding: 20px;
+            &-input {
+                margin: 15px;
             }
-        }
-        h2{
-            color: #666;
-            margin-bottom: 200px;
-            p{
-                margin: 0 0 50px;
+            &>h3 {
+                border-bottom: 1px solid #222;
             }
         }
         .ivu-row-flex{
@@ -28,26 +32,36 @@
     <div class="index">
         <Row type="flex" justify="center" align="middle">
             <Col span="24">
-                <h1>
-                    <img src="../images/logo.png">
-                </h1>
-                <h2>
-                    <p>Welcome to your iView app!</p>
-                    <Button @click="handleStart">Start iView</Button>
-                </h2>
+                <div class="login"> 
+                    <h3>欢迎登录</h3>
+                    <div class="login-input">
+                        <Input v-model="username" placeholder="Please input your username..." style="width: 300px" />
+                    </div>
+                    <div class="login-input">
+                        <Input v-model="password" placeholder="Please input your password..." style="width: 300px" />
+                    </div>
+                    <Button @click="log_in= true" >login</Button>
+                </div>
             </Col>
         </Row>
     </div>
 </template>
 <script>
     export default {
+        data() {
+            return {
+                username: '',
+                password: '',
+            }
+        },
         methods: {
             handleStart () {
                 this.$Modal.info({
                     title: 'Bravo',
                     content: 'Now, enjoy the convenience of iView.'
-                });
-            }
+                });           
+            }        
         }
     }
+    
 </script>
