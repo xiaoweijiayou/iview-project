@@ -1,8 +1,11 @@
 <style scoped>
     @import 'styles/common.css';
+    .app-height {
+        height: 100%;
+    }
 </style>
 <template>
-    <div>
+    <div class="app-height">
         <router-view></router-view>
     </div>
 </template>
