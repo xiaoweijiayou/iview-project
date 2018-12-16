@@ -1,7 +1,10 @@
-<style lang='less' scoped>
+<style lang='less'>
 .set-table {
   display: inline-block;
-  margin: 10px 10px 8px 8px;
+  margin: 10px 10px;
+  .ivu-table {
+    overflow-y: auto;
+  }
 }
 .set-page {
   display: inline-block;
@@ -14,11 +17,11 @@
     <Cascader
       :data="data"
       v-model="value1"
-      style="width:150px; float:left;display:inline"
+      style="width:150px; display:inline-block"
       @on-change="handleChangeCascader"
     ></Cascader>
     <label style="margin: 0 10px 8px 6px">项目名</label>
-    <Select v-model="modelRroject" style="width:150px">
+    <Select v-model="modelProject" style="width:150px" @on-change="handleChangeProject">
       <Option v-for="item in projectList" :value="item.value" :key="item.value">{{ item.label }}</Option>
     </Select>
     <Button type="default" style=" margin-right: 5px;">刷新</Button>
@@ -26,18 +29,14 @@
     <Button type="default">停止</Button>
     <Button type="default" style=" margin-left: 5px;">重启</Button>
     <Table
-      @on-row-click="handleRowClick"
+      @on-select="handleRowSelected"
+      @on-select-cancel="handleRowSelected"
       class="set-table"
       border
       :columns="columns1"
       :data="data1"
-    ></Table>
-    <Table
-      @on-row-click="handleRowClick"
-      class="set-table"
-      border
-      :columns="columns2"
-      :data="data2"
+      highlight-row
+      style="height: 400px;"
     ></Table>
     <Page
       class="change-page"
@@ -49,21 +48,23 @@
       @on-change="handlePageChange"
       @on-page-size-change="handleSizeChange"
     />
+    <Table class="set-table" border :columns="columns2" :data="data2" :style="tableHeight"></Table>
   </div>
 </template>
 <script>
-import { devices } from "@/api/data";
-import expandRow from './tableExpand.vue';
- 
+import { devices, getProjectId, getProjectDevices, runDevices } from "@/api/data";
+import expandRow from "./tableExpand.vue";
+
 export default {
   data() {
     return {
       total: 1,
       page: 1,
-      modelRroject: "",
+      modelProject: "",
       value1: [],
       total: 1,
       data1: [],
+      data2: [],
       meta: {
         total: 0,
         page: 1,
@@ -326,30 +327,54 @@ export default {
           key: "status"
         }
       ],
-      data2: [
-        {
-          projectid: "1",
-          id: 19,
-          sn: 'gdkhwijl',
-          status: "running",
-          stationid: "2",
-          userid: 1,          
-        }
-      ]
+      // data2: [
+      //   {
+      //     projectid: "1",
+      //     id: 19,
+      //     sn: "gdkhwijl",
+      //     status: "running",
+      //     stationid: "2",
+      //     userid: 1
+      //   }
+      // ],
+      runningParam: {},
+      checkedTableData: [],
+      tableHeight: {}
     };
   },
   methods: {
     handleRun() {
-      if (this.value1.length == 0) {
+      this.getRunningParam()
+      if (!this.runningParam.TC_Name) {
         this.$Message.error("请选择测试项");
-      } else {
-        if (!this.modelRroject) {
-          this.$Message.error("请选择项目");
-        }
+        return
+      } else if (!this.runningParam.projectid) {
+        this.$Message.error("请选择项目");
+        return
+      } else if(!this.runningParam.sn) {
+        this.$Message.error("请选择设备");
+        return
       }
+      // todo：调运行接口
+      runDevices(this.runningParam).then((res) => {
+        // 更新两个表格数据
+        alert(res.data.result)
+      })
     },
-    handleRowClick() {},
-    handleChangeCascader(value, selectedData) {},
+    getRunningParam() {
+      let sn = ''
+      this.checkedTableData.forEach(item => {
+        sn += `${item.sn}+`
+      })
+      this.runningParam.sn = sn.substring(0, sn.length - 1)
+      this.runningParam.projectid = this.modelProject
+    },
+    handleRowSelected(checkedData, currentData) {
+      this.checkedTableData = checkedData
+    },
+    handleChangeCascader(value) {
+      this.runningParam.TC_Name = value.join("/");
+    },
     handlePageChange(page) {
       this.meta.page = page;
       this.changeTableData();
@@ -361,7 +386,7 @@ export default {
     changeTableData() {
       devices(this.meta.page, this.meta.per_page).then(res => {
         this.data1 = res.data && res.data.items;
-        this.setSelectData(this.data1);
+        // this.setSelectData(this.data1);
         this.meta = res.data && res.data.meta;
       });
     },
@@ -374,10 +399,36 @@ export default {
         });
       });
       this.projectList = items;
+    },
+    initProjectList() {
+      getProjectId().then(res => {
+        let data = res.data.list;
+        let items = [];
+        data.forEach(item => {
+          items.push({
+            label: item.projectid,
+            value: item.projectid
+          });
+        });
+        this.projectList = items;
+      });
+    },
+    handleChangeProject(value) {
+      this.checkedTableData = []
+      getProjectDevices(value).then((res) => {
+        this.data1 = res.data && res.data.items
+      })
+      // todo: 填充正在运行表格
     }
   },
   mounted() {
     this.changeTableData(1);
+    this.tableHeight = {
+      height: `${document.body.clientHeight - 590}px`
+    }
+  },
+  created() {
+    this.initProjectList();
   }
 };
 </script>
